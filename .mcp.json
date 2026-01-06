@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "restate-docs": {
+      "type": "http",
+      "url": "https://docs.restate.dev/mcp"
+    },
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/home/slinkydeveloper/projects/work/re-state"]
+    }
+  }
+}

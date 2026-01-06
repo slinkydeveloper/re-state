@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/real-estate-tracker/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-01-06T10:21:06.046Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767694866032_itjzih7sh",
+      "approvalTitle": "Requirements Document for Real Estate Tracker"
+    }
+  ]
+}

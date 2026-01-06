@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/real-estate-tracker/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-01-06T10:25:37.722Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767695137718_dl0dqq7hw",
+      "approvalTitle": "Design Document for Real Estate Tracker"
+    }
+  ]
+}

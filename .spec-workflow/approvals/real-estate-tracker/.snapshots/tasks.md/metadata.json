@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/real-estate-tracker/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-01-06T10:52:53.787Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767696773784_a61ok9tea",
+      "approvalTitle": "Tasks Document for Real Estate Tracker"
+    }
+  ]
+}
