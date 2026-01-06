@@ -1,4 +1,3 @@
-import * as cheerio from "cheerio";
 import { openai } from "@ai-sdk/openai";
 import { generateObject, wrapLanguageModel } from "ai";
 import { z } from "zod";
@@ -7,6 +6,7 @@ import type * as restate from "@restatedev/restate-sdk";
 import { PropertyAd, RenovationStatusSchema } from "../types";
 import { fetchWithBrowser } from "./browser-fetcher";
 import { DURABLE_AI_RETRY_CONFIG, DURABLE_FETCH_RETRY_CONFIG } from "./ai-config";
+import { cleanHtmlForAI } from "./html-cleaner";
 
 /**
  * Scrapes a property listing from idealista.it and extracts structured data.
@@ -26,12 +26,8 @@ export async function scrapeIdealistaAd(
   // Fetch the page with browser to bypass DataDome protection
   const html = await ctx.run("fetch-html", () => fetchWithBrowser(url), DURABLE_FETCH_RETRY_CONFIG);
 
-  // Minimal cleanup - just remove scripts, styles, and obvious noise
-  const $ = cheerio.load(html);
-  $("script, style, nav, header, footer, iframe, noscript").remove();
-
-  // Get the cleaned HTML
-  const cleanedHtml = $.html();
+  // Clean HTML to reduce size and improve AI extraction
+  const cleanedHtml = cleanHtmlForAI(html);
 
   // Wrap the AI model with durable calls middleware
   const model = wrapLanguageModel({
@@ -52,41 +48,47 @@ export async function scrapeIdealistaAd(
       description: z.string().describe("La descrizione completa dell'immobile"),
       descriptionSummary: z
         .string()
-        .describe("Un riassunto conciso e fattuale della descrizione, senza il linguaggio di marketing dell'agenzia, solo i fatti sull'immobile"),
+        .describe("Un riassunto conciso e fattuale della descrizione (2-4 frasi), senza il linguaggio di marketing dell'agenzia, solo i fatti sull'immobile. OBBLIGATORIO - non lasciare vuoto."),
       renovationStatus: RenovationStatusSchema.describe(
         "Lo stato di ristrutturazione: 'new' se nuovo o appena ristrutturato, 'little renovation' se serve solo lavoro minore (pittura, pavimenti), 'to renovate extensively' se serve ristrutturazione importante (riscaldamento, impianti, struttura)"
       ),
       features: z.array(z.string()).describe("Lista delle caratteristiche principali dell'immobile (es. ascensore, terrazzo, cantina, posto auto, ecc.)"),
-      adAge: z.string().describe("Da quanto tempo è pubblicato l'annuncio (es. 'oggi', '3 giorni fa', '2 settimane fa', ecc.)"),
+      adAge: z.string().describe("Da quanto tempo è pubblicato l'annuncio, o quanto tempo fa è stato aggiornato/modificato (es. 'oggi', '3 giorni fa', '2 settimane fa', ecc.). Se non disponibile, usa 'non specificato'"),
     }),
     prompt: `Analizza questa pagina HTML di un annuncio immobiliare da Idealista.it ed estrai tutte le informazioni strutturate.
 
 HTML dell'annuncio:
-${cleanedHtml.slice(0, 50000)}
+${cleanedHtml.slice(0, 40000)}
 
-Estrai tutte le informazioni disponibili sull'immobile. Sii preciso con i numeri (prezzo, metri quadri, camere, bagni).
-Per il riassunto della descrizione, elimina tutto il linguaggio di marketing e fornisci solo i fatti oggettivi.
-Per lo stato di ristrutturazione, valuta attentamente se l'immobile è nuovo/ristrutturato, se ha bisogno di piccoli lavori, o di ristrutturazione importante.`
+ISTRUZIONI IMPORTANTI:
+1. Estrai tutte le informazioni disponibili sull'immobile. Sii preciso con i numeri (prezzo, metri quadri, camere, bagni).
+2. Per il riassunto della descrizione (descriptionSummary): OBBLIGATORIO - scrivi sempre un riassunto di 2-4 frasi con solo i fatti oggettivi, eliminando tutto il linguaggio di marketing.
+3. Per lo stato di ristrutturazione, valuta attentamente se l'immobile è nuovo/ristrutturato, se ha bisogno di piccoli lavori, o di ristrutturazione importante.
+4. Se un campo opzionale non è disponibile, lascialo vuoto (undefined).
+5. Per l'età dell'annuncio (adAge), se non trovi l'informazione usa "non specificato".`
   });
 
-  // Construct the PropertyAd object
+  // Validate and construct the PropertyAd object with fallback values
+  const extracted = aiExtraction.object;
+
+  // Ensure required fields are present with fallbacks
   const propertyAd: PropertyAd = {
     id: "", // Will be set by caller
     url,
     source: "idealista" as const,
-    title: aiExtraction.object.title,
-    price: aiExtraction.object.price,
-    location: aiExtraction.object.location,
-    size: aiExtraction.object.size,
-    rooms: aiExtraction.object.rooms,
-    bathrooms: aiExtraction.object.bathrooms,
-    description: aiExtraction.object.description,
-    descriptionSummary: aiExtraction.object.descriptionSummary,
-    renovationStatus: aiExtraction.object.renovationStatus,
-    features: aiExtraction.object.features,
+    title: extracted.title || "Annuncio senza titolo",
+    price: extracted.price,
+    location: extracted.location || "Località non specificata",
+    size: extracted.size,
+    rooms: extracted.rooms,
+    bathrooms: extracted.bathrooms,
+    description: extracted.description || "Descrizione non disponibile",
+    descriptionSummary: extracted.descriptionSummary || extracted.description?.slice(0, 200) + "..." || "Nessuna descrizione disponibile",
+    renovationStatus: extracted.renovationStatus || "little renovation", // Conservative default
+    features: extracted.features?.length > 0 ? extracted.features : [],
     status: "to reach out", // Default status
     notes: undefined,
-    adAge: aiExtraction.object.adAge,
+    adAge: extracted.adAge || "non specificato",
     scrapedAt: new Date().toISOString(),
   };
 
