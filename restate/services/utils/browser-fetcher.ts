@@ -1,11 +1,11 @@
-import "server-only";
-import puppeteer from "puppeteer-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import chromium from "@sparticuz/chromium";
-import { existsSync } from "fs";
+// import "server-only";
+// import puppeteer from "puppeteer-extra";
+// import StealthPlugin from "puppeteer-extra-plugin-stealth";
+// import chromium from "@sparticuz/chromium";
+// import { existsSync } from "fs";
 
 // Add stealth plugin globally (only once)
-puppeteer.use(StealthPlugin());
+// puppeteer.use(StealthPlugin());
 
 /**
  * Fetches a URL using an external scraping service or Puppeteer.
@@ -109,188 +109,190 @@ async function fetchWithZenRows(url: string, apiKey: string): Promise<string> {
  */
 async function fetchWithPuppeteer(url: string): Promise<string> {
 
-  // Determine if we're running locally or on Vercel/Lambda
-  const isLocal = !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME;
+  throw new Error('Puppeteer fetching is currently disabled. Please set up an API key for ScraperAPI, ScrapingBee, or ZenRows to enable scraping functionality.');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const launchOptions: Record<string, any> = {
-    args: isLocal
-      ? [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-blink-features=AutomationControlled',
-          '--disable-dev-shm-usage',
-          '--disable-web-security',
-          '--disable-features=IsolateOrigins,site-per-process',
-          '--allow-running-insecure-content',
-        ]
-      : [
-          ...chromium.args,
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-blink-features=AutomationControlled',
-        ],
-    defaultViewport: null, // Don't set viewport, let it be natural
-    headless: 'new', // Use new headless mode (harder to detect)
-    ignoreHTTPSErrors: true,
-  };
+  // // Determine if we're running locally or on Vercel/Lambda
+  // const isLocal = !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME;
 
-  // For serverless, use @sparticuz/chromium
-  if (!isLocal) {
-    launchOptions.executablePath = await chromium.executablePath();
-  } else {
-    // For local development, try to find Chrome/Chromium
-    // puppeteer-core requires an executable path
-    const possiblePaths = [
-      '/usr/bin/google-chrome',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    ];
+  // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // const launchOptions: Record<string, any> = {
+  //   args: isLocal
+  //     ? [
+  //         '--no-sandbox',
+  //         '--disable-setuid-sandbox',
+  //         '--disable-blink-features=AutomationControlled',
+  //         '--disable-dev-shm-usage',
+  //         '--disable-web-security',
+  //         '--disable-features=IsolateOrigins,site-per-process',
+  //         '--allow-running-insecure-content',
+  //       ]
+  //     : [
+  //         ...chromium.args,
+  //         '--no-sandbox',
+  //         '--disable-setuid-sandbox',
+  //         '--disable-blink-features=AutomationControlled',
+  //       ],
+  //   defaultViewport: null, // Don't set viewport, let it be natural
+  //   headless: 'new', // Use new headless mode (harder to detect)
+  //   ignoreHTTPSErrors: true,
+  // };
 
-    let foundPath: string | null = null;
-    for (const path of possiblePaths) {
-      try {
-        if (existsSync(path)) {
-          foundPath = path;
-          break;
-        }
-      } catch {
-        // Continue checking
-      }
-    }
+  // // For serverless, use @sparticuz/chromium
+  // if (!isLocal) {
+  //   launchOptions.executablePath = await chromium.executablePath();
+  // } else {
+  //   // For local development, try to find Chrome/Chromium
+  //   // puppeteer-core requires an executable path
+  //   const possiblePaths = [
+  //     '/usr/bin/google-chrome',
+  //     '/usr/bin/chromium-browser',
+  //     '/usr/bin/chromium',
+  //     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  //     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  //     'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  //   ];
 
-    if (foundPath) {
-      launchOptions.executablePath = foundPath;
-    } else {
-      throw new Error(
-        'Could not find Chrome/Chromium executable. Please install Chrome or set CHROME_PATH environment variable.'
-      );
-    }
-  }
+  //   let foundPath: string | null = null;
+  //   for (const path of possiblePaths) {
+  //     try {
+  //       if (existsSync(path)) {
+  //         foundPath = path;
+  //         break;
+  //       }
+  //     } catch {
+  //       // Continue checking
+  //     }
+  //   }
 
-  const browser = await puppeteer.launch(launchOptions);
+  //   if (foundPath) {
+  //     launchOptions.executablePath = foundPath;
+  //   } else {
+  //     throw new Error(
+  //       'Could not find Chrome/Chromium executable. Please install Chrome or set CHROME_PATH environment variable.'
+  //     );
+  //   }
+  // }
 
-  try {
-    const page = await browser.newPage();
+  // const browser = await puppeteer.launch(launchOptions);
 
-    // Override navigator properties to avoid detection
-    await page.evaluateOnNewDocument(() => {
-      // Override the navigator.webdriver property
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => false,
-      });
+  // try {
+  //   const page = await browser.newPage();
 
-      // Override the navigator.plugins to look like a real browser
-      Object.defineProperty(navigator, 'plugins', {
-        get: () => [1, 2, 3, 4, 5],
-      });
+  //   // Override navigator properties to avoid detection
+  //   await page.evaluateOnNewDocument(() => {
+  //     // Override the navigator.webdriver property
+  //     Object.defineProperty(navigator, 'webdriver', {
+  //       get: () => false,
+  //     });
 
-      // Override the navigator.languages
-      Object.defineProperty(navigator, 'languages', {
-        get: () => ['it-IT', 'it', 'en-US', 'en'],
-      });
+  //     // Override the navigator.plugins to look like a real browser
+  //     Object.defineProperty(navigator, 'plugins', {
+  //       get: () => [1, 2, 3, 4, 5],
+  //     });
 
-      // Add chrome property
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).chrome = {
-        runtime: {},
-      };
+  //     // Override the navigator.languages
+  //     Object.defineProperty(navigator, 'languages', {
+  //       get: () => ['it-IT', 'it', 'en-US', 'en'],
+  //     });
 
-      // Override permissions
-      const originalQuery = window.navigator.permissions.query;
-      window.navigator.permissions.query = (parameters) =>
-        parameters.name === 'notifications'
-          ? Promise.resolve({ state: 'denied' } as PermissionStatus)
-          : originalQuery(parameters);
-    });
+  //     // Add chrome property
+  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //     (window as any).chrome = {
+  //       runtime: {},
+  //     };
 
-    // Set realistic headers
-    await page.setExtraHTTPHeaders({
-      'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Upgrade-Insecure-Requests': '1',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none',
-      'Sec-Fetch-User': '?1',
-    });
+  //     // Override permissions
+  //     const originalQuery = window.navigator.permissions.query;
+  //     window.navigator.permissions.query = (parameters) =>
+  //       parameters.name === 'notifications'
+  //         ? Promise.resolve({ state: 'denied' } as PermissionStatus)
+  //         : originalQuery(parameters);
+  //   });
 
-    // Set a realistic user agent
-    await page.setUserAgent(
-      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    );
+  //   // Set realistic headers
+  //   await page.setExtraHTTPHeaders({
+  //     'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
+  //     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  //     'Accept-Encoding': 'gzip, deflate, br',
+  //     'Upgrade-Insecure-Requests': '1',
+  //     'Sec-Fetch-Dest': 'document',
+  //     'Sec-Fetch-Mode': 'navigate',
+  //     'Sec-Fetch-Site': 'none',
+  //     'Sec-Fetch-User': '?1',
+  //   });
 
-    // Navigate to the page and wait for it to load
-    const response = await page.goto(url, {
-      waitUntil: 'networkidle0',
-      timeout: 30000,
-    });
+  //   // Set a realistic user agent
+  //   await page.setUserAgent(
+  //     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  //   );
 
-    if (!response) {
-      await browser.close();
-      throw new Error(`Failed to load page: ${url} - No response received`);
-    }
+  //   // Navigate to the page and wait for it to load
+  //   const response = await page.goto(url, {
+  //     waitUntil: 'networkidle0',
+  //     timeout: 30000,
+  //   });
 
-    const status = response.status();
+  //   if (!response) {
+  //     await browser.close();
+  //     throw new Error(`Failed to load page: ${url} - No response received`);
+  //   }
 
-    // Get response headers for debugging
-    const headers = response.headers();
-    const headersStr = JSON.stringify(headers, null, 2);
+  //   const status = response.status();
 
-    if (status === 404) {
-      await browser.close();
-      throw new Error(
-        `Ad not found (404): ${url}\nResponse headers:\n${headersStr}`
-      );
-    } else if (status === 403) {
-      const bodyPreview = (await page.content()).slice(0, 500);
-      await browser.close();
-      throw new Error(
-        `Access denied (403): ${url}\n` +
-        `Possible anti-bot protection detected.\n` +
-        `Response headers:\n${headersStr}\n` +
-        `Body preview:\n${bodyPreview}`
-      );
-    } else if (status >= 500) {
-      await browser.close();
-      throw new Error(
-        `Server error (${status}): ${url}\n` +
-        `Response headers:\n${headersStr}`
-      );
-    } else if (status !== 200 && status !== 304) {
-      await browser.close();
-      throw new Error(
-        `Failed to fetch (${status}): ${url}\n` +
-        `Response headers:\n${headersStr}`
-      );
-    }
+  //   // Get response headers for debugging
+  //   const headers = response.headers();
+  //   const headersStr = JSON.stringify(headers, null, 2);
 
-    // Add some human-like behavior
-    // Random mouse movements
-    await page.mouse.move(100, 100);
-    await page.waitForTimeout(100);
-    await page.mouse.move(200, 200);
-    await page.waitForTimeout(150);
+  //   if (status === 404) {
+  //     await browser.close();
+  //     throw new Error(
+  //       `Ad not found (404): ${url}\nResponse headers:\n${headersStr}`
+  //     );
+  //   } else if (status === 403) {
+  //     const bodyPreview = (await page.content()).slice(0, 500);
+  //     await browser.close();
+  //     throw new Error(
+  //       `Access denied (403): ${url}\n` +
+  //       `Possible anti-bot protection detected.\n` +
+  //       `Response headers:\n${headersStr}\n` +
+  //       `Body preview:\n${bodyPreview}`
+  //     );
+  //   } else if (status >= 500) {
+  //     await browser.close();
+  //     throw new Error(
+  //       `Server error (${status}): ${url}\n` +
+  //       `Response headers:\n${headersStr}`
+  //     );
+  //   } else if (status !== 200 && status !== 304) {
+  //     await browser.close();
+  //     throw new Error(
+  //       `Failed to fetch (${status}): ${url}\n` +
+  //       `Response headers:\n${headersStr}`
+  //     );
+  //   }
 
-    // Scroll down a bit like a human would
-    await page.evaluate(() => {
-      window.scrollBy(0, Math.floor(Math.random() * 500) + 100);
-    });
+  //   // Add some human-like behavior
+  //   // Random mouse movements
+  //   await page.mouse.move(100, 100);
+  //   await page.waitForTimeout(100);
+  //   await page.mouse.move(200, 200);
+  //   await page.waitForTimeout(150);
 
-    // Wait a bit more for any dynamic content to load
-    await page.waitForTimeout(2000);
+  //   // Scroll down a bit like a human would
+  //   await page.evaluate(() => {
+  //     window.scrollBy(0, Math.floor(Math.random() * 500) + 100);
+  //   });
 
-    // Get the final HTML content
-    const content = await page.content();
-    await browser.close();
+  //   // Wait a bit more for any dynamic content to load
+  //   await page.waitForTimeout(2000);
 
-    return content;
-  } catch (error) {
-    await browser.close();
-    throw error;
-  }
+  //   // Get the final HTML content
+  //   const content = await page.content();
+  //   await browser.close();
+
+  //   return content;
+  // } catch (error) {
+  //   await browser.close();
+  //   throw error;
+  // }
 }
