@@ -67,7 +67,7 @@ The Next.js app will start on `http://localhost:3000`
 Register your services so Restate can proxy and durably execute them:
 
 ```shell
-npx @restatedev/restate deployments register -y --use-http1.1 http://localhost:3000/restate/v1
+npx @restatedev/restate deployments register -y --use-http1.1 http://localhost:3000/restate
 ```
 
 You can also register services via the Restate Admin UI at `http://localhost:9070`
