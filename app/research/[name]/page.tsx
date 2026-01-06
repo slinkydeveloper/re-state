@@ -261,7 +261,7 @@ export default function ResearchPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
           <div>
             <h1 style={{ margin: 0, fontSize: "28px", marginBottom: "5px" }}>{name}</h1>
-            <div style={{ fontSize: "14px", color: "#666" }}>{criteria}</div>
+            <div style={{ fontSize: "14px", color: "#666", whiteSpace: "pre-wrap" }}>{criteria}</div>
           </div>
           <label>
             <strong>Filter: </strong>
