@@ -6,6 +6,7 @@ import { durableCalls } from "@restatedev/vercel-ai-middleware";
 import type * as restate from "@restatedev/restate-sdk";
 import { PropertyAd, RenovationStatusSchema } from "../types";
 import { fetchWithBrowser } from "./browser-fetcher";
+import { DURABLE_AI_RETRY_CONFIG, DURABLE_FETCH_RETRY_CONFIG } from "./ai-config";
 
 /**
  * Scrapes a property listing from idealista.it and extracts structured data.
@@ -23,7 +24,7 @@ export async function scrapeIdealistaAd(
   }
 
   // Fetch the page with browser to bypass DataDome protection
-  const html = await ctx.run("fetch-html", () => fetchWithBrowser(url));
+  const html = await ctx.run("fetch-html", () => fetchWithBrowser(url), DURABLE_FETCH_RETRY_CONFIG);
 
   // Minimal cleanup - just remove scripts, styles, and obvious noise
   const $ = cheerio.load(html);
@@ -35,7 +36,7 @@ export async function scrapeIdealistaAd(
   // Wrap the AI model with durable calls middleware
   const model = wrapLanguageModel({
     model: openai("gpt-4o"),
-    middleware: durableCalls(ctx, { maxRetryAttempts: 10, initialRetryInterval: { seconds: 1 }, maxRetryInterval: { seconds: 10 } }),
+    middleware: durableCalls(ctx, DURABLE_AI_RETRY_CONFIG),
   });
 
   // Let AI do ALL the extraction work with an Italian prompt

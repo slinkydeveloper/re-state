@@ -11,6 +11,11 @@ import {
   AdStatus,
   AdStatusSchema,
 } from "./types";
+import { DURABLE_AI_RETRY_CONFIG } from "./utils/ai-config";
+
+const sharedHandlersOptions = {
+  journalRetention: 0,
+};
 
 export const researchTracker = restate.object({
   name: "ResearchTracker",
@@ -41,6 +46,7 @@ export const researchTracker = restate.object({
      * Get research criteria
      */
     getCriteria: restate.handlers.object.shared(
+      sharedHandlersOptions,
       async (ctx: restate.ObjectSharedContext): Promise<string> => {
         const criteria = await ctx.get<string>("criteria");
         if (!criteria) {
@@ -98,6 +104,7 @@ export const researchTracker = restate.object({
      * Get all property ads
      */
     getAds: restate.handlers.object.shared(
+      sharedHandlersOptions,
       async (ctx: restate.ObjectSharedContext): Promise<PropertyAd[]> => {
         const ads = (await ctx.get<PropertyAd[]>("ads")) || [];
         return ads;
@@ -193,7 +200,7 @@ Property ${idx + 1}:
       // Use durable AI calls
       const model = wrapLanguageModel({
         model: openai("gpt-4o"),
-        middleware: durableCalls(ctx, { maxRetryAttempts: 3 }),
+        middleware: durableCalls(ctx, DURABLE_AI_RETRY_CONFIG),
       });
 
       const result = await generateText({
@@ -233,12 +240,16 @@ Fornisci una risposta dettagliata e utile analizzando gli immobili in base alla 
      * Get all Q&A history
      */
     getQuestions: restate.handlers.object.shared(
+      sharedHandlersOptions,
       async (ctx: restate.ObjectSharedContext): Promise<QuestionAnswer[]> => {
         const questions = (await ctx.get<QuestionAnswer[]>("questions")) || [];
         return questions;
       }
     ),
   },
+  options: {
+    abortTimeout: {minutes: 5},
+  }
 });
 
 export type ResearchTracker = typeof researchTracker;
